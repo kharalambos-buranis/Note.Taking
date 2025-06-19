@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Note.Taking.API.Common.Extensions;
 using Note.Taking.API.Infrastructure.Database;
@@ -8,10 +9,17 @@ namespace Note.Taking.API.Features.Notes
 {
     public class GetAllNotes
     {
-        public record Request(int Page, int PageSize, string? Search, string? Tag);
+        public class Request
+        {
+            public int Page { get; set; }
+            public int PageSize { get; set; }
+            public string? Search { get; set; }
+            public string? Tag { get; set; }
+        }
+
+        public record Response(List<NoteItem> Notes, int TotalCount, int Page, int PageSize);
 
         public record NoteItem(int Id, string Title, string Content, DateTime CreatedAt);
-        public record Response(List<NoteItem> Notes, int TotalCount, int Page, int PageSize);
 
         public sealed class Validator : AbstractValidator<Request>
         {
@@ -26,14 +34,31 @@ namespace Note.Taking.API.Features.Notes
         {
             public void MapEndpoint(IEndpointRouteBuilder app)
             {
-                app.MapGet("notes", Handler)
+                app.MapGet("api/notes", Handler)
                    .RequireAuthorization()
                    .WithTags("Notes");
             }
         }
 
-        public static async Task<IResult> Handler(Request request,ClaimsPrincipal user,AppDbContext context,IValidator<Request> validator, ILogger<GetAllNotes> logger, CancellationToken cancellationToken)
+        public static async Task<IResult> Handler(
+            int page,
+            int pageSize,
+            string? search,
+            string? tag,
+            ClaimsPrincipal user,
+            AppDbContext context,
+            IValidator<Request> validator,
+            ILogger<GetAllNotes> logger,
+            CancellationToken cancellationToken)
         {
+            var request = new Request
+            {
+                Page = page,
+                PageSize = pageSize,
+                Search = search,
+                Tag = tag,
+            };
+
             var validationResult = await validator.ValidateAsync(request, cancellationToken);
             if (!validationResult.IsValid)
             {

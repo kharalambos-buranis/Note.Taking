@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Note.Taking.API.Common.Extensions;
 using Note.Taking.API.Common.Models;
@@ -11,7 +12,7 @@ namespace Note.Taking.API.Features.Notes
     {
         public record Request(string Title, string Content, List<string> Tags);
 
-        public record Response(int id,string Title, string Content,DateTime CreatedAt);
+        public record Response(int Id, string Title, string Content, DateTime CreatedAt);
 
         public sealed class Validator : AbstractValidator<Request>
         {
@@ -26,11 +27,13 @@ namespace Note.Taking.API.Features.Notes
         {
             public void MapEndpoint(IEndpointRouteBuilder app)
             {
-                app.MapPost("notes", Handler).WithTags("Notes");
+                app.MapPost("api/notes", Handler)
+                    .WithTags("Notes")
+                    .RequireAuthorization();
             }
         }
 
-        public static async Task<IResult> Handler(Request request, ClaimsPrincipal user, AppDbContext context, IValidator<Request> validator, ILogger<CreateNote> logger, CancellationToken cancellationToken)
+        public static async Task<IResult> Handler([FromBody] Request request, ClaimsPrincipal user, AppDbContext context, IValidator<Request> validator, ILogger<CreateNote> logger, CancellationToken cancellationToken)
         {
             var validationResult = await validator.ValidateAsync(request);
 
@@ -62,10 +65,11 @@ namespace Note.Taking.API.Features.Notes
             }
 
 
-            var note = new Note.Taking.API.Common.Models.Note {
+            var note = new Note.Taking.API.Common.Models.Note
+            {
                 Title = request.Title,
-                Content = request.Content, 
-                CreatedAt = DateTime.UtcNow, 
+                Content = request.Content,
+                CreatedAt = DateTime.UtcNow,
                 UserId = userId,
                 NoteTags = tagEntities.Select(tag => new NoteTag
                 {
@@ -79,7 +83,7 @@ namespace Note.Taking.API.Features.Notes
 
             logger.LogInformation("User {UserId} created note {NoteId} with tags: {@Tags}", userId, note.Id, normalizedTagNames);
 
-            return Results.Ok(new Response (note.Id,note.Title,note.Content,note.CreatedAt));
+            return Results.Ok(new Response(note.Id, note.Title, note.Content, note.CreatedAt));
         }
     }
 }

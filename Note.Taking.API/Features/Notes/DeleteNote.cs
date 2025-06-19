@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Note.Taking.API.Common.Extensions;
 using Note.Taking.API.Infrastructure.Database;
 using System.Security.Claims;
@@ -11,13 +12,13 @@ namespace Note.Taking.API.Features.Notes
         {
             public void MapEndpoint(IEndpointRouteBuilder app)
             {
-                app.MapDelete("/notes/{id:int}", Handler)
+                app.MapDelete("api/notes/{id:int}", Handler)
                    .RequireAuthorization()
                    .WithTags("Notes");
             }
         }
 
-        public static async Task<IResult> Handler( int id, ClaimsPrincipal user, AppDbContext context, ILogger<DeleteNote> logger, CancellationToken cancellationToken)
+        public static async Task<IResult> Handler([FromRoute]int id, ClaimsPrincipal user, AppDbContext context, ILogger<DeleteNote> logger, CancellationToken cancellationToken)
         {
             var userId = int.Parse(user.FindFirst("userId")?.Value!);
 

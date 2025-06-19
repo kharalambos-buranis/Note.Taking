@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Note.Taking.API.Common.Extensions;
 using Note.Taking.API.Common.Models;
@@ -10,7 +10,7 @@ namespace Note.Taking.API.Features.Auth
     public class RegisterUser
     {
         public record Request(string Email, string PasswordHash, string FullName);
-        public record Response(int id,string Email, string FullName);
+        public record Response(int Id, string Email, string FullName);
 
         public sealed class Validator : AbstractValidator<Request>
         {
@@ -27,11 +27,11 @@ namespace Note.Taking.API.Features.Auth
         {
             public void MapEndpoint(IEndpointRouteBuilder app)
             {
-                app.MapPost("users", Handler).WithTags("Users");
+                app.MapPost("api/users", Handler).WithTags("Users");
             }
-        } 
+        }
 
-        public static async Task<IResult> Handler (Request request, AppDbContext context, IValidator<Request> validator,CancellationToken cancellationToken, ILogger<RegisterUser> logger)
+        public static async Task<IResult> Handler([FromBody] Request request, AppDbContext context, IValidator<Request> validator, CancellationToken cancellationToken, ILogger<RegisterUser> logger)
         {
             var validationResult = await validator.ValidateAsync(request);
 
@@ -57,7 +57,7 @@ namespace Note.Taking.API.Features.Auth
 
             logger.LogInformation("User registered: {Email}", request.Email);
 
-            return Results.Ok(new Response(user.Id,user.Email,user.FullName));
+            return Results.Ok(new Response(user.Id, user.Email, user.FullName));
         }
     }
 }

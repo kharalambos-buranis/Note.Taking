@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Note.Taking.API.Common.Extensions;
 using Note.Taking.API.Infrastructure.Database;
@@ -11,7 +11,7 @@ namespace Note.Taking.API.Features.Notes
     {
         public record Request(string Title, string Content);
 
-        public record Response(int id,string Title, string Content,DateTime UpdatedAt);
+        public record Response(int Id, string Title, string Content, DateTime UpdatedAt);
 
         public sealed class Validator : AbstractValidator<Request>
         {
@@ -26,13 +26,20 @@ namespace Note.Taking.API.Features.Notes
         {
             public void MapEndpoint(IEndpointRouteBuilder app)
             {
-                app.MapPut("/notes/{id:int}", Handler)
+                app.MapPut("api/notes/{id:int}", Handler)
                     .RequireAuthorization()
                     .WithTags("Notes");
             }
         }
 
-        public static async Task<IResult> Handler(int id,Request request, ClaimsPrincipal user, AppDbContext context,IValidator<Request> validator, ILogger<UpdateNote> logger, CancellationToken cancellationToken)
+        public static async Task<IResult> Handler(
+            [FromRoute] int id,
+            [FromBody] Request request,
+            ClaimsPrincipal user,
+            AppDbContext context,
+            IValidator<Request> validator,
+            ILogger<UpdateNote> logger,
+            CancellationToken cancellationToken)
         {
             var validationResult = await validator.ValidateAsync(request, cancellationToken);
             if (!validationResult.IsValid)
@@ -63,5 +70,5 @@ namespace Note.Taking.API.Features.Notes
         }
 
     }
-    
+
 }

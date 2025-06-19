@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
 using Note.Taking.API.Common.Extensions;
 using Note.Taking.API.Infrastructure.Database;
 using Note.Taking.API.Infrastructure.Services;
@@ -25,11 +25,11 @@ namespace Note.Taking.API.Features.Auth
         {
             public void MapEndpoint(IEndpointRouteBuilder app)
             {
-                app.MapPost("/auth/refresh-token", Handler).WithTags("Auth");
+                app.MapPost("api/auth/refresh-token", Handler).WithTags("Auth");
             }
         }
 
-        public static async Task<IResult> Handler(Request request, AppDbContext context, IValidator<Request> validator,TokenProvider token, ILogger<RefreshToken> logger, CancellationToken cancellationToken)
+        public static async Task<IResult> Handler([FromBody] Request request, AppDbContext context, IValidator<Request> validator, TokenProvider token, ILogger<RefreshToken> logger, CancellationToken cancellationToken)
         {
             var validationResult = await validator.ValidateAsync(request, cancellationToken);
             if (!validationResult.IsValid)
@@ -46,7 +46,7 @@ namespace Note.Taking.API.Features.Auth
             {
                 logger.LogWarning("Refresh token failed: user not found {Email}", request.Email);
                 return Results.Unauthorized();
-            } 
+            }
 
             if (string.IsNullOrWhiteSpace(user.StoredRefreshToken) || user.StoredRefreshToken != request.RefreshToken)
             {
@@ -59,7 +59,7 @@ namespace Note.Taking.API.Features.Auth
 
             user.StoredAccessToken = newAccessToken;
             user.StoredRefreshToken = newRefreshToken;
-          
+
             context.Users.Update(user);
             await context.SaveChangesAsync(cancellationToken);
 
