@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Note.Taking.API.Common.Extensions;
 using Note.Taking.API.Common.Models;
@@ -30,18 +31,18 @@ namespace Note.Taking.API.Features.Auth
         {
             public void MapEndpoint(IEndpointRouteBuilder app)
             {
-                app.MapGet("logineduser", Handler).WithTags("LoginUsers");
+                app.MapPost("api/auth/login", Handler).WithTags("Auth");
             }
         }
 
         public static async Task<IResult> Handler(
-        Request request,
-        AppDbContext context,
-        IValidator<Request> validator,
-        IPasswordHasher<User> passwordHasher,
-        TokenProvider token,
-        CancellationToken cancellationToken,
-        ILogger<LoginUser> logger)
+            [FromBody] Request request,
+            AppDbContext context,
+            IValidator<Request> validator,
+            //IPasswordHasher<User> passwordHasher,
+            TokenProvider token,
+            CancellationToken cancellationToken,
+            ILogger<LoginUser> logger)
         {
             var validationResult = await validator.ValidateAsync(request, cancellationToken);
             if (!validationResult.IsValid)
