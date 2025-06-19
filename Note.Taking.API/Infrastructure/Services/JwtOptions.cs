@@ -1,4 +1,4 @@
-﻿namespace Note.Taking.API.Infrastructure.Middleware
+﻿namespace Note.Taking.API.Infrastructure.Services
 {
     public class JwtOptions
     {

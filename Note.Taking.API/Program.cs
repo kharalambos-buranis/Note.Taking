@@ -1,13 +1,14 @@
 
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Note.Taking.API.Common.Extensions;
+using Note.Taking.API.Features.Auth;
 using Note.Taking.API.Infrastructure.Database;
-using Note.Taking.API.Infrastructure.Middleware;
 using Note.Taking.API.Infrastructure.Services;
 using System.Text;
-using FluentValidation;
+using Serilog;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,9 +46,13 @@ builder.Services.AddEndpoints();
 
 
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+builder.Services.AddValidatorsFromAssemblyContaining<RefreshToken>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Host.UseSerilog((ctx, config) =>
+    config.ReadFrom.Configuration(ctx.Configuration));
 
 var app = builder.Build();
 

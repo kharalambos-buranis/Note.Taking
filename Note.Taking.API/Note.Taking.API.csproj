@@ -23,6 +23,9 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.4.19" />
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="ServiceStack.Interfaces" Version="8.8.0" />
     <PackageReference Include="SolrNet.Core" Version="1.2.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.1" />
@@ -30,8 +33,7 @@
 
   <ItemGroup>
     <Folder Include="Common\Constants\" />
-    <Folder Include="Features\Tags\" />
-    <Folder Include="Features\Notes\" />
+    <Folder Include="Infrastructure\Middleware\" />
   </ItemGroup>
 
 </Project>

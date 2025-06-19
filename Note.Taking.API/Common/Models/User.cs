@@ -9,8 +9,9 @@
         public string FullName { get; set; }
 
         public DateTime CreatedAt { get; set; }
-       // public DateTime UpdatedAt { get; set; }
-
+        // public DateTime UpdatedAt { get; set; }
+        public string StoredRefreshToken { get; set; }
+        public string StoredAccessToken { get; set; }
         public List<Note> Notes { get; set; }
     }
 }

@@ -40,16 +40,15 @@ namespace Note.Taking.API.Features.Auth
         IValidator<Request> validator,
         IPasswordHasher<User> passwordHasher,
         TokenProvider token,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ILogger<LoginUser> logger)
         {
-
             var validationResult = await validator.ValidateAsync(request, cancellationToken);
             if (!validationResult.IsValid)
             {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage);
-                return Results.BadRequest(new { Errors = errors });
+                logger.LogWarning("Invalid login input for {Email}", request.Email);
+                return Results.BadRequest(validationResult.Errors);
             }
-
 
             var user = await context.Users.FirstOrDefaultAsync(
                 u => u.Email == request.Email && u.PasswordHash == request.PasswordHash,
@@ -57,18 +56,21 @@ namespace Note.Taking.API.Features.Auth
 
             if (user is null)
             {
+                logger.LogWarning("Login failed. Email not found: {Email}", request.Email);
                 return Results.Unauthorized();
             }
-
 
             var accessToken = token.Create(user);
             var refreshToken = Guid.NewGuid().ToString();
 
+            user.StoredAccessToken = accessToken;
+            user.StoredRefreshToken = refreshToken;
 
-            var response = new Response(user.FullName, accessToken, refreshToken);
-            return Results.Ok(response);
+            logger.LogInformation("User {Email} logged in successfully", request.Email);
+
+            return Results.Ok(new Response(user.FullName, accessToken, refreshToken));
         }
     }
 
 }
-}
+
