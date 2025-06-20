@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Note.Taking.API.Common.Extensions;
 using Note.Taking.API.Infrastructure.Database;
+using Note.Taking.API.Infrastructure.Services;
 using System.Security.Claims;
 
 namespace Note.Taking.API.Features.Notes
@@ -32,7 +33,7 @@ namespace Note.Taking.API.Features.Notes
             if (note is null)
             {
                 logger.LogWarning("Note {NoteId} not found for user {UserId}", id, userId);
-                return Results.NotFound("Note not found.");
+                throw new NotFoundException($"Note with ID {id} not found.");
             }
 
             logger.LogInformation("User {UserId} fetched note {NoteId}", userId, id);

@@ -11,7 +11,7 @@ namespace Note.Taking.API.Features.Auth
 {
     public class LoginUser
     {
-        public record Request(string Email, string PasswordHash);
+        public record Request(string Email, string Password);
 
         public record Response(string FullName, string AccessToken, string RefreshToken);
 
@@ -20,7 +20,7 @@ namespace Note.Taking.API.Features.Auth
             public Validator()
             {
                 RuleFor(u => u.Email).NotEmpty();
-                RuleFor(u => u.PasswordHash)
+                RuleFor(u => u.Password)
                  .NotEmpty()
                  .MinimumLength(8)
                  .WithMessage("The Passwordhash must contain at least 8 symbols");
@@ -39,7 +39,7 @@ namespace Note.Taking.API.Features.Auth
             [FromBody] Request request,
             AppDbContext context,
             IValidator<Request> validator,
-            //IPasswordHasher<User> passwordHasher,
+            IPasswordHasher<User> passwordHasher,
             TokenProvider token,
             CancellationToken cancellationToken,
             ILogger<LoginUser> logger)
@@ -52,7 +52,7 @@ namespace Note.Taking.API.Features.Auth
             }
 
             var user = await context.Users.FirstOrDefaultAsync(
-                u => u.Email == request.Email && u.PasswordHash == request.PasswordHash,
+                u => u.Email == request.Email,
                 cancellationToken);
 
             if (user is null)
@@ -61,11 +61,21 @@ namespace Note.Taking.API.Features.Auth
                 return Results.Unauthorized();
             }
 
+            var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+
+            if (result != PasswordVerificationResult.Success)
+            {
+                logger.LogWarning("Login failed: invalid password - {Email}", request.Email);
+                return Results.Unauthorized();
+            }
+
             var accessToken = token.Create(user);
             var refreshToken = Guid.NewGuid().ToString();
 
             user.StoredAccessToken = accessToken;
             user.StoredRefreshToken = refreshToken;
+
+            await context.SaveChangesAsync();
 
             logger.LogInformation("User {Email} logged in successfully", request.Email);
 

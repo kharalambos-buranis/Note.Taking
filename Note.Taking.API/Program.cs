@@ -1,14 +1,19 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Note.Taking.API.Common.Extensions;
+using Note.Taking.API.Common.Models;
 using Note.Taking.API.Infrastructure.Database;
+using Note.Taking.API.Infrastructure.Middleware;
 using Note.Taking.API.Infrastructure.Services;
 using Scalar.AspNetCore;
 using Serilog;
 using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,6 +60,9 @@ builder.Services.AddDbContext<AppDbContext>(
           optionsBuilder.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
       });
 
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddTransient<GlobalExceptionHandlingMiddleware>();
+
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 
 builder.Services.AddSingleton<TokenProvider>();
@@ -78,6 +86,9 @@ builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
 builder.Services.AddEndpoints();
 
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection"));
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -97,5 +108,31 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapEndpoints();
+
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+
+app.MapGet("/health", () => Results.Ok("OK"));
+
+app.MapHealthChecks("/health/db");
+
+app.MapHealthChecks("/health/db", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(entry => new {
+                name = entry.Key,
+                status = entry.Value.Status.ToString(),
+                error = entry.Value.Exception?.Message
+            })
+        });
+
+        await context.Response.WriteAsync(result);
+    }
+});
 
 app.Run();

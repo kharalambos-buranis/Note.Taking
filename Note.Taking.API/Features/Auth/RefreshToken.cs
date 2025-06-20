@@ -48,6 +48,7 @@ namespace Note.Taking.API.Features.Auth
                 return Results.Unauthorized();
             }
 
+
             if (string.IsNullOrWhiteSpace(user.StoredRefreshToken) || user.StoredRefreshToken != request.RefreshToken)
             {
                 logger.LogWarning("Invalid refresh token attempt for {Email}", request.Email);

@@ -1,15 +1,17 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Note.Taking.API.Common.Extensions;
 using Note.Taking.API.Common.Models;
 using Note.Taking.API.Infrastructure.Database;
+using ServiceStack.Auth;
 
 namespace Note.Taking.API.Features.Auth
 {
     public class RegisterUser
     {
-        public record Request(string Email, string PasswordHash, string FullName);
+        public record Request(string Email, string Password, string FullName);
         public record Response(int Id, string Email, string FullName);
 
         public sealed class Validator : AbstractValidator<Request>
@@ -17,9 +19,8 @@ namespace Note.Taking.API.Features.Auth
             public Validator()
             {
                 RuleFor(u => u.Email).NotEmpty().EmailAddress();
-                RuleFor(u => u.PasswordHash).NotEmpty().MinimumLength(8).WithMessage("The Passwordhash must contain at least 8 symbols");
+                RuleFor(u => u.Password).NotEmpty().MinimumLength(8).WithMessage("The Password must contain at least 8 symbols");
                 RuleFor(u => u.FullName).NotEmpty();
-
             }
         }
 
@@ -31,7 +32,7 @@ namespace Note.Taking.API.Features.Auth
             }
         }
 
-        public static async Task<IResult> Handler([FromBody] Request request, AppDbContext context, IValidator<Request> validator, CancellationToken cancellationToken, ILogger<RegisterUser> logger)
+        public static async Task<IResult> Handler([FromBody] Request request, AppDbContext context, IValidator<Request> validator, CancellationToken cancellationToken, ILogger<RegisterUser> logger, IPasswordHasher<User> passwordHasher)
         {
             var validationResult = await validator.ValidateAsync(request);
 
@@ -45,11 +46,13 @@ namespace Note.Taking.API.Features.Auth
 
             if (existingUser is not null)
             {
-                logger.LogWarning("Attempt to register with already used email: {Email}", request.Email);
+                logger.LogWarning("Attempt to register with already used email {Email}", request.Email);
                 return Results.BadRequest("Email is already registered.");
             }
 
-            var user = new User { Email = request.Email, PasswordHash = request.PasswordHash, FullName = request.FullName, CreatedAt = DateTime.UtcNow };
+            var user = new User { Email = request.Email, FullName = request.FullName, CreatedAt = DateTime.UtcNow };
+
+            user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
 
             context.Users.Add(user);
 

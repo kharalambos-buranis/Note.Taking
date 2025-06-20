@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Note.Taking.API.Common.Extensions;
+using Note.Taking.API.Common.Models;
 using Note.Taking.API.Infrastructure.Database;
 
 namespace Note.Taking.API.Features.Tags
@@ -17,6 +19,7 @@ namespace Note.Taking.API.Features.Tags
 
         public static async Task<IResult> Handler([FromQuery] string? search, AppDbContext context, CancellationToken cancellationToken)
         {
+
             var query = context.Tags.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
